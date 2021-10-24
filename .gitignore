@@ -1,0 +1,11 @@
+.DS_Store
+
+.vscode
+__pycache__
+modified.*
+
+.coverage
+
+*.srctrlbm
+*.srctrldb
+*.srctrlprj
