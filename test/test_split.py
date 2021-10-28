@@ -6,7 +6,7 @@ import glob
 from gpx_split.split import Splitter
 from gpx_split.writer import Writer
 
-OUT = 'test/out/'
+OUT = './test/out/'
 FILE = 'test.gpx'
 
 class TestSplitter(unittest.TestCase):
