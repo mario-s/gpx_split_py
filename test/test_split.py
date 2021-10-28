@@ -11,6 +11,17 @@ FILE = 'test.gpx'
 
 class TestSplitter(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        #create the output if not present
+        if not os.path.exists(OUT):
+            os.makedirs(OUT)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(OUT):
+            os.rmdir(OUT)
+
     def __path(self, name):
         f = 'test/resources/' + name
         return os.path.realpath(f)
