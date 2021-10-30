@@ -22,6 +22,13 @@ class TestSplitter(unittest.TestCase):
         if os.path.exists(OUT):
             os.rmdir(OUT)
 
+    def setUp(self):
+        self.writer = Writer(OUT)
+
+    def tearDown(self):
+        for f in self.__files():
+            os.remove(f)
+
     def __path(self, name):
         f = 'test/resources/' + name
         return os.path.realpath(f)
@@ -29,21 +36,13 @@ class TestSplitter(unittest.TestCase):
     def __files(self):
         return glob.glob(OUT + '*')
 
-    def setUp(self):
-        writer = Writer(OUT)
-        self.splitter = Splitter(writer)
-        self.splitter.logger.setLevel(logging.DEBUG)
-
-    def tearDown(self):
-        for f in self.__files():
-            os.remove(f)
-
-    def test_split_into_one(self):
-        self.splitter.split(self.__path(FILE))
-        self.assertEqual(1, len(self.__files()))
+    def __split(self, points = 500):
+        splitter = Splitter(self.writer, points)
+        splitter.logger.setLevel(logging.DEBUG)
+        splitter.split(self.__path(FILE))
 
     def test_split_into_two(self):
-        self.splitter.split(self.__path(FILE), 30)
+        self.__split(30)
         self.assertEqual(2, len(self.__files()))
 
 

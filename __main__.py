@@ -12,12 +12,12 @@ from gpx_split.writer import Writer
 @click.option("-l", "--log", help="Log output.", default=False)
 def _main(source, output, points, log):
     writer = Writer(output)
-    splitter = Splitter(writer)
+    splitter = Splitter(writer, points)
     if log:
         writer.logger.setLevel(logging.DEBUG)
         splitter.logger.setLevel(logging.DEBUG)
 
-    splitter.split(source, max_segment_points=points)
+    splitter.split(source)
 
 if __name__ == "__main__":
     _main()
