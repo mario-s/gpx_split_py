@@ -23,7 +23,9 @@ class TestSplitter(unittest.TestCase):
             os.rmdir(OUT)
 
     def setUp(self):
-        self.writer = Writer(OUT)
+        writer = Writer(OUT)
+        self.splitter = Splitter(writer)
+        self.splitter.logger.setLevel(logging.DEBUG)
 
     def tearDown(self):
         for f in self.__files():
@@ -36,13 +38,8 @@ class TestSplitter(unittest.TestCase):
     def __files(self):
         return glob.glob(OUT + '*')
 
-    def __split(self, points = 500):
-        splitter = Splitter(self.writer, points)
-        splitter.logger.setLevel(logging.DEBUG)
-        splitter.split(self.__path(FILE))
-
     def test_split_into_two(self):
-        self.__split(30)
+        self.splitter.split(self.__path(FILE), 30)
         self.assertEqual(2, len(self.__files()))
 
 
