@@ -1,4 +1,5 @@
 import logging
+from abc import ABC
 from pathlib import Path
 
 import gpxpy
@@ -8,10 +9,10 @@ from gpx_split.distance import GeoCalc
 from gpx_split.log_factory import LogFactory
 
 
-class Splitter:
+class Splitter(ABC):
 
     """
-    This class will split a large gpx file into smaller chunks.
+    Base class to split a large gpx file into smaller chunks.
     """
 
     def __init__(self, writer):
@@ -24,41 +25,17 @@ class Splitter:
                 return func(self, name)
         return func_wrapper
 
-    def split(self, source, max_segment_points=500):
-        self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
-
-        next_name = Splitter.next_name(source)
-        output_count = 1
-        track_segment = Splitter.new_segment()
-
-        for track in Splitter.tracks(source):
-            for segment in track.segments:
-                for point in segment.points:
-                    track_segment.points.append(point)
-
-                    if len(track_segment.points) >= max_segment_points:
-                        self.write(next_name(output_count), track_segment)
-                        output_count += 1
-                        track_segment = Splitter.new_segment()
-                        track_segment.points.append(point)
-
-        self.write_remainings(next_name(output_count), track_segment)
-
-    @classmethod
-    def next_name(cls, source):
+    def next_name(self, source):
         name = Path(source).name.rsplit('.gpx')[0]
         return lambda count: f"{name}_{str(count)}"
 
-    @classmethod
-    def new_segment(cls):
+    def new_segment(self):
         return gpxpy.gpx.GPXTrackSegment()
 
-    @classmethod
-    def tracks(cls, source):
-        return Splitter.parse(source).tracks
+    def tracks(self, source):
+        return self.parse(source).tracks
 
-    @classmethod
-    def parse(cls, source):
+    def parse(self, source):
         with open(source, "rb") as f:
             gpx = gpxpy.parse(f)
         return gpx
@@ -76,3 +53,33 @@ class Splitter:
     def __log_track_len(self, track_segment):
         points = [(p.latitude, p.longitude) for p in track_segment.points]
         self.logger.debug(f"Track length: {GeoCalc.track_length(points) / 1000} km")
+
+    def log_source(self, source):
+        self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
+
+
+class PointSplitter(Splitter):
+
+    """
+    This class split a gpx file after a given number of points per segment is exceeded.
+    """
+
+    def split(self, source, max_segment_points=500):
+        self.log_source(source)
+
+        output_count = 1
+        next_name = self.next_name(source)
+        track_segment = self.new_segment()
+
+        for track in self.tracks(source):
+            for segment in track.segments:
+                for point in segment.points:
+                    track_segment.points.append(point)
+
+                    if len(track_segment.points) >= max_segment_points:
+                        self.write(next_name(output_count), track_segment)
+                        output_count += 1
+                        track_segment = self.new_segment()
+                        track_segment.points.append(point)
+
+        self.write_remainings(next_name(output_count), track_segment)

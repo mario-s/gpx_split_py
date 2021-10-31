@@ -3,7 +3,7 @@ import unittest
 import os
 import glob
 
-from gpx_split.split import Splitter
+from gpx_split.split import PointSplitter
 from gpx_split.writer import Writer
 
 OUT = os.getcwd() + '/test/out/'
@@ -24,7 +24,7 @@ class TestSplitter(unittest.TestCase):
 
     def setUp(self):
         writer = Writer(OUT)
-        self.splitter = Splitter(writer)
+        self.splitter = PointSplitter(writer)
         self.splitter.logger.setLevel(logging.DEBUG)
 
     def tearDown(self):
