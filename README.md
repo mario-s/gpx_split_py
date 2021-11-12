@@ -1,6 +1,8 @@
 # Gpx Splitter
 
-This app was created out of the need to split large GPX files into smaller chunks for GPS devices which can handle only a limmiten number of track points. Another possible use case is, to split a large track into smaller pieces for daily stages.
+This tool was created out of the need to split large GPX files into smaller chunks. So that they can be used in GPS devices wich can process only a limited amount of track points.
+
+Another possible use case is, to split a large track into smaller pieces for daily stages.
 
 ## Install Requirements
 ```
