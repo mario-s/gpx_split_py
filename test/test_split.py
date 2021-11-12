@@ -3,7 +3,7 @@ import unittest
 import os
 import glob
 
-from gpx_split.split import PointSplitter
+from gpx_split.split import PointSplitter, LengthSplitter
 from gpx_split.writer import Writer
 
 OUT = os.getcwd() + '/test/out/'
@@ -23,9 +23,7 @@ class TestSplitter(unittest.TestCase):
             os.rmdir(OUT)
 
     def setUp(self):
-        writer = Writer(OUT)
-        self.splitter = PointSplitter(writer)
-        self.splitter.logger.setLevel(logging.DEBUG)
+        self.writer = Writer(OUT)
 
     def tearDown(self):
         for f in self.__files():
@@ -38,8 +36,16 @@ class TestSplitter(unittest.TestCase):
     def __files(self):
         return glob.glob(OUT + '*')
 
-    def test_split_into_two(self):
-        self.splitter.split(self.__path(FILE), 30)
+    def test_length_split(self):
+        splitter = LengthSplitter(self.writer)
+        splitter.logger.setLevel(logging.DEBUG)
+        splitter.split(self.__path(FILE), 1)
+        self.assertEqual(2, len(self.__files()))
+
+    def test_point_split(self):
+        splitter = PointSplitter(self.writer)
+        splitter.logger.setLevel(logging.DEBUG)
+        splitter.split(self.__path(FILE), 30)
         self.assertEqual(2, len(self.__files()))
 
 
