@@ -39,13 +39,13 @@ class TestSplitter(unittest.TestCase):
     def test_length_split(self):
         splitter = LengthSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
-        splitter.split(self.__path(FILE), 1)
+        splitter.split(self.__path(FILE), max=1)
         self.assertEqual(2, len(self.__files()))
 
     def test_point_split(self):
         splitter = PointSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
-        splitter.split(self.__path(FILE), 30)
+        splitter.split(self.__path(FILE), max=30)
         self.assertEqual(2, len(self.__files()))
 
 

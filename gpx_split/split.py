@@ -93,8 +93,10 @@ class PointSplitter(Splitter):
     """
     This class splits a gpx file after a given number of points per segment is exceeded.
     """
-    def split(self, source, max_segment_points=500):
-        super().split(source, max_segment_points)
+    def split(self, source, max):
+        max = max or 500
+        self.logger.debug(f"maximum number of points in track: {max}")
+        super().split(source, max)
 
     def exceeds_max(self, track_segment, max):
         return len(track_segment.points) >= max
@@ -105,8 +107,10 @@ class LengthSplitter(Splitter):
     """
     This class splits a gpx file after a given maximum length in km of segment is exceeded.
     """
-    def split(self, source, max_km=20):
-        super().split(source, max_km)
+    def split(self, source, max):
+        max = max or 20
+        self.logger.debug(f"maximum track length: {max} km")
+        super().split(source, max)
 
     def exceeds_max(self, track_segment, max):
         return Splitter.track_length(track_segment) >= max
