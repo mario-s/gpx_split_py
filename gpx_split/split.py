@@ -34,10 +34,10 @@ class Splitter(ABC):
         name = Path(source).name.rsplit('.gpx')[0]
         return f"{name}_{self.output_count}"
 
-    def new_segment(self, point = None):
+    def new_segment(self, first_point = None):
         segment = gpxpy.gpx.GPXTrackSegment()
-        if not point is None:
-            segment.points.append(point)
+        if not first_point is None:
+            segment.points.append(first_point)
         return segment
 
     def tracks(self, source):
@@ -84,8 +84,11 @@ class Splitter(ABC):
                 for point in segment.points:
                     track_segment.points.append(point)
 
+                    # if a maximum for the track segment is exceeded,
+                    # we write current segment to a file and create a new one
                     if self.exceeds_max(track_segment, max):
                         self.write(source, track_segment)
+                        # add current point as first one to new segment
                         track_segment = self.new_segment(point)
 
         self.write_remainings(source, track_segment)
