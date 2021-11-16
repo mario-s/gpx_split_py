@@ -40,16 +40,15 @@ class TestSplitter(unittest.TestCase):
         splitter = LengthSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
         splitter.split(self.__path(FILE), max=1)
-        self.__verify_files()
+        self.__verify_files(2)
 
     def test_point_split(self):
         splitter = PointSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
         splitter.split(self.__path(FILE), max=30)
-        self.__verify_files()
+        self.__verify_files(2)
 
-    def __verify_files(self):
-        length = 2
+    def __verify_files(self, length):
         files = self.__files()
         self.assertEqual(length, len(files))
         for i in range(0, length):
