@@ -40,13 +40,20 @@ class TestSplitter(unittest.TestCase):
         splitter = LengthSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
         splitter.split(self.__path(FILE), max=1)
-        self.assertEqual(2, len(self.__files()))
+        self.__verify_files()
 
     def test_point_split(self):
         splitter = PointSplitter(self.writer)
         splitter.logger.setLevel(logging.DEBUG)
         splitter.split(self.__path(FILE), max=30)
-        self.assertEqual(2, len(self.__files()))
+        self.__verify_files()
+
+    def __verify_files(self):
+        length = 2
+        files = self.__files()
+        self.assertEqual(length, len(files))
+        for i in range(0, length):
+            self.assertTrue(files[i].endswith(f"_{i+1}.gpx"))
 
 
 if __name__ == '__main__':

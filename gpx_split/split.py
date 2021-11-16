@@ -10,6 +10,7 @@ from gpx_split.log_factory import LogFactory
 
 
 class Splitter(ABC):
+    FIRST_INDEX = 1
 
     """
     Base class to split a large gpx file into smaller chunks.
@@ -18,6 +19,10 @@ class Splitter(ABC):
     def __init__(self, writer):
         self.writer = writer
         self.logger = LogFactory.create(__name__)
+        self.__reset_output_count()
+
+    def __reset_output_count(self):
+        self.output_count = Splitter.FIRST_INDEX
 
     def debug_enabled(func):
         def func_wrapper(self, name):
@@ -27,10 +32,13 @@ class Splitter(ABC):
 
     def next_name(self, source):
         name = Path(source).name.rsplit('.gpx')[0]
-        return lambda count: f"{name}_{str(count)}"
+        return f"{name}_{self.output_count}"
 
-    def new_segment(self):
-        return gpxpy.gpx.GPXTrackSegment()
+    def new_segment(self, point = None):
+        segment = gpxpy.gpx.GPXTrackSegment()
+        if not point is None:
+            segment.points.append(point)
+        return segment
 
     def tracks(self, source):
         return self.parse(source).tracks
@@ -41,17 +49,18 @@ class Splitter(ABC):
         return gpx
 
     #ensure that we save file when number of all points is below max points per file
-    def write_remainings(self, name, track_segment):
+    def write_remainings(self, source, track_segment):
         if len(track_segment.points) > 1:
-            self.write(name, track_segment)
+            self.write(source, track_segment)
 
-    def write(self, name, track_segment):
+    def write(self, source, track_segment):
         self.__log_track_len(track_segment)
-        self.writer.write(name, track_segment)
+        self.writer.write(self.next_name(source), track_segment)
+        #increase counter after writing for the next name
+        self.output_count += 1
 
     @debug_enabled
     def __log_track_len(self, track_segment):
-
         self.logger.debug(f"Track length: {Splitter.track_length(track_segment)} km")
 
     def track_length(track_segment):
@@ -67,8 +76,7 @@ class Splitter(ABC):
     def split(self, source, max):
         self.log_source(source)
 
-        output_count = 1
-        next_name = self.next_name(source)
+        self.__reset_output_count()
         track_segment = self.new_segment()
 
         for track in self.tracks(source):
@@ -77,12 +85,10 @@ class Splitter(ABC):
                     track_segment.points.append(point)
 
                     if self.exceeds_max(track_segment, max):
-                        self.write(next_name(output_count), track_segment)
-                        output_count += 1
-                        track_segment = self.new_segment()
-                        track_segment.points.append(point)
+                        self.write(source, track_segment)
+                        track_segment = self.new_segment(point)
 
-        self.write_remainings(next_name(output_count), track_segment)
+        self.write_remainings(source, track_segment)
 
     def exceeds_max(self, track_segment, max):
         pass
