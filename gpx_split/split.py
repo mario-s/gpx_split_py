@@ -1,6 +1,7 @@
 import logging
 import time
 from abc import ABC
+from abc import abstractmethod
 from pathlib import Path
 
 import gpxpy
@@ -104,6 +105,7 @@ class Splitter(ABC):
 
         self.write_remainings(source, track_segment)
 
+    @abstractmethod
     def exceeds_max(self, track_segment, max):
         pass
 
