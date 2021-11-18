@@ -14,6 +14,7 @@ from gpx_split.writer import Writer
     help="Maximum when track shall be splitted, can be points or length in km.")
 @click.option("-d", "--debug", help="Debug Log output.", default=False)
 def _main(source, output, type, max, debug):
+
     writer = Writer(output)
     if type == "p":
         splitter = PointSplitter(writer)
@@ -24,6 +25,7 @@ def _main(source, output, type, max, debug):
         splitter.logger.setLevel(logging.DEBUG)
 
     splitter.split(source, max)
+
 
 if __name__ == "__main__":
     _main()

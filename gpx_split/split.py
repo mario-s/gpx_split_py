@@ -1,4 +1,5 @@
 import logging
+import time
 from abc import ABC
 from pathlib import Path
 
@@ -28,6 +29,15 @@ class Splitter(ABC):
         def func_wrapper(self, name):
             if self.logger.isEnabledFor(logging.DEBUG):
                 return func(self, name)
+        return func_wrapper
+
+    def execution_time(func):
+        def func_wrapper(self, *args, **kwargs):
+            start = time.time()
+            result = func(self, *args, **kwargs)
+
+            self.logger.debug(f"Execution time: {time.time() - start} seconds")
+            return result
         return func_wrapper
 
     def next_name(self, source):
@@ -73,6 +83,7 @@ class Splitter(ABC):
     def log_source(self, source):
         self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
 
+    @execution_time
     def split(self, source, max):
         self.log_source(source)
 
