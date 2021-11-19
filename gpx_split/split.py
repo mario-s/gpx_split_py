@@ -158,4 +158,4 @@ class LengthSplitter(Splitter):
                 return True
             return False
 
-        return self.track_length(track_segment) >= limit
+        return False
