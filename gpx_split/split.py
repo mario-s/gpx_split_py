@@ -5,6 +5,7 @@ from abc import abstractmethod
 from pathlib import Path
 
 import gpxpy
+from gpxpy.geo import distance
 import gpxpy.gpx
 
 from gpx_split.distance import GeoCalc
@@ -12,7 +13,8 @@ from gpx_split.log_factory import LogFactory
 
 
 class Splitter(ABC):
-    FIRST_INDEX = 1
+    # for Meter in Kilometer.
+    KILO = 1000
 
     """
     Base class to split a large gpx file into smaller chunks.
@@ -24,7 +26,7 @@ class Splitter(ABC):
         self.__reset_output_count()
 
     def __reset_output_count(self):
-        self.output_count = Splitter.FIRST_INDEX
+        self.output_count = 1
 
     def debug_enabled(func):
         def func_wrapper(self, name):
@@ -72,20 +74,26 @@ class Splitter(ABC):
 
     @debug_enabled
     def __log_track_len(self, track_segment):
-        self.logger.debug(f"Track length: {Splitter.track_length(track_segment)} km")
+        self.logger.debug(f"Track length: {self.track_length(track_segment)} km")
 
-    def track_length(track_segment):
+    def track_length(self, track_segment):
         """
         This calculates length of the track in km.
         """
-        points = [(p.latitude, p.longitude) for p in track_segment.points]
-        return GeoCalc.track_length(points) / 1000
+        points = self.extract_coordinates(track_segment)
+        return GeoCalc.track_length(points) / Splitter.KILO
+
+    def extract_coordinates(self, track_segment):
+        """
+        Extract coordinates of all points.
+        """
+        return [(p.latitude, p.longitude) for p in track_segment.points]
 
     def log_source(self, source):
         self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
 
     @execution_time
-    def split(self, source, max):
+    def split(self, source, limit):
         self.log_source(source)
 
         self.__reset_output_count()
@@ -96,9 +104,9 @@ class Splitter(ABC):
                 for point in segment.points:
                     track_segment.points.append(point)
 
-                    # if a maximum for the track segment is exceeded,
+                    # if a limit for the track segment is exceeded,
                     # we write current segment to a file and create a new one
-                    if self.exceeds_max(track_segment, max):
+                    if self.exceeds_limit(track_segment, limit):
                         self.write(source, track_segment)
                         # add current point as first one to new segment
                         track_segment = self.new_segment(point)
@@ -106,7 +114,7 @@ class Splitter(ABC):
         self.write_remainings(source, track_segment)
 
     @abstractmethod
-    def exceeds_max(self, track_segment, max):
+    def exceeds_limit(self, track_segment, max):
         pass
 
 
@@ -115,24 +123,39 @@ class PointSplitter(Splitter):
     """
     This class splits a gpx file after a given number of points per segment is exceeded.
     """
-    def split(self, source, max):
-        max = max or 500
-        self.logger.debug(f"maximum number of points in track: {max}")
-        super().split(source, max)
+    def split(self, source, limit):
+        limit = limit or 500
+        self.logger.debug(f"maximum number of points in track: {limit}")
+        super().split(source, limit)
 
-    def exceeds_max(self, track_segment, max):
-        return len(track_segment.points) >= max
+    def exceeds_limit(self, track_segment, limit):
+        return len(track_segment.points) >= limit
 
 
 class LengthSplitter(Splitter):
 
     """
-    This class splits a gpx file after a given maximum length in km of segment is exceeded.
+    This class splits a gpx file after a given minimum length in km of segment is exceeded.
     """
-    def split(self, source, max):
-        max = max or 20
-        self.logger.debug(f"maximum track length: {max} km")
-        super().split(source, max)
+    def __init__(self, writer):
+        super().__init__(writer)
+        self.segment_length = 0
 
-    def exceeds_max(self, track_segment, max):
-        return Splitter.track_length(track_segment) >= max
+    def split(self, source, limit):
+        limit = limit or 20
+        self.logger.debug(f"minimum track length: {limit} km")
+        self.segment_length = 0
+        super().split(source, limit)
+
+    def exceeds_limit(self, track_segment, limit):
+        if len(track_segment.points) > 2:
+            points = self.extract_coordinates(track_segment)
+            dist = GeoCalc.points(points[-2], points[-1]) / Splitter.KILO
+            self.segment_length = self.segment_length + dist
+
+            if self.segment_length >= limit:
+                self.segment_length = 0
+                return True
+            return False
+
+        return self.track_length(track_segment) >= limit

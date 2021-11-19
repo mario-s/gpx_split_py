@@ -10,10 +10,10 @@ from gpx_split.writer import Writer
 @click.option("-t", "--type", type=click.Choice(["p", "l"]),
     help="split type: points per track (p) | length of track (l)",
     default="p")
-@click.option("-m", "--max", type=int,
-    help="Maximum when track shall be splitted, can be points or length in km.")
+@click.option("-l", "--limit", type=int,
+    help="The track will be split when the limit is exceeded, points or length.")
 @click.option("-d", "--debug", help="Debug Log output.", default=False)
-def _main(source, output, type, max, debug):
+def _main(source, output, type, limit, debug):
 
     writer = Writer(output)
     if type == "p":
@@ -24,7 +24,7 @@ def _main(source, output, type, max, debug):
         writer.logger.setLevel(logging.DEBUG)
         splitter.logger.setLevel(logging.DEBUG)
 
-    splitter.split(source, max)
+    splitter.split(source, limit)
 
 
 if __name__ == "__main__":
