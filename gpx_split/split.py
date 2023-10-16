@@ -5,7 +5,6 @@ from abc import abstractmethod
 from pathlib import Path
 
 import gpxpy
-from gpxpy.geo import distance
 import gpxpy.gpx
 
 from gpx_split.distance import GeoCalc
