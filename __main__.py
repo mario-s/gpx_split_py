@@ -1,8 +1,8 @@
 import click
-import time
 import logging
-from gpx_split.log_factory import LogFactory
 
+from datetime import datetime
+from gpx_split.log_factory import LogFactory
 from gpx_split.split import PointSplitter, LengthSplitter
 from gpx_split.writer import Writer
 
@@ -16,7 +16,7 @@ from gpx_split.writer import Writer
     help="The track will be split when the limit is exceeded, points or length.")
 @click.option("-d", "--debug", help="Debug Log output.", default=False)
 def _main(source, output, type, limit, debug):
-    start = time.time()
+    start = datetime.now()
     logger = LogFactory.create(__name__)
 
     writer = Writer(output)
@@ -32,7 +32,8 @@ def _main(source, output, type, limit, debug):
 
     splitter.split(source, limit)
 
-    logger.debug(f"Execution time: {time.time() - start} seconds")
+    duration = datetime.now() - start
+    logger.debug(f"Execution time: {duration.microseconds} microseconds")
 
 
 if __name__ == "__main__":
