@@ -18,10 +18,10 @@ python . <GPX_FILE> [-o <OUTPUT_DIR>] [-t (p|l)] [-m INTEGER]  [-d True]
 
 Or from top directory.
 ```
-python gpx_edit <GPX_FILE> [-o <OUTPUT_DIR>] [-t (p|l)] [-m INTEGER]  [-d True]
+python gpx_split <GPX_FILE> [-o <OUTPUT_DIR>] [-t (p|l)] [-m INTEGER]  [-d True]
 ```
 
 ## Help
 ```
-python gpx_edit --help
+python gpx_split --help
 ```
