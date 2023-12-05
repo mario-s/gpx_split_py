@@ -33,15 +33,6 @@ class Splitter(ABC):
                 return func(self, name)
         return func_wrapper
 
-    def execution_time(func):
-        def func_wrapper(self, *args, **kwargs):
-            start = time.time()
-            result = func(self, *args, **kwargs)
-
-            self.logger.debug(f"Execution time: {time.time() - start} seconds")
-            return result
-        return func_wrapper
-
     def next_name(self, source):
         name = Path(source).name.rsplit('.gpx')[0]
         return f"{name}_{self.output_count}"
@@ -91,7 +82,6 @@ class Splitter(ABC):
     def log_source(self, source):
         self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
 
-    @execution_time
     def split(self, source, limit):
         self.log_source(source)
 
