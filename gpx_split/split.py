@@ -5,6 +5,7 @@ from pathlib import Path
 
 import gpxpy
 import gpxpy.gpx
+from gpxpy.gpx import GPXTrack, GPXTrackSegment
 
 from gpx_split.distance import GeoCalc
 from gpx_split.log_factory import LogFactory
@@ -36,11 +37,12 @@ class Splitter(ABC):
         name = Path(source).name.rsplit('.gpx')[0]
         return f"{name}_{self.output_count}"
 
-    def new_segment(self, first_point = None):
-        segment = gpxpy.gpx.GPXTrackSegment()
-        if not first_point is None:
-            segment.points.append(first_point)
-        return segment
+    def clone_track(self, src_track, points) -> GPXTrack:
+        segment = GPXTrackSegment()
+        segment.points = points
+        cloned_track = src_track
+        cloned_track.segments = [segment]
+        return cloned_track
 
     def tracks(self, source):
         return self.parse(source).tracks
@@ -50,56 +52,67 @@ class Splitter(ABC):
             gpx = gpxpy.parse(f)
         return gpx
 
-    #ensure that we save file when number of all points is below max points per file
-    def write_remainings(self, source, track_segment):
-        if len(track_segment.points) > 1:
-            self.write(source, track_segment)
-
-    def write(self, source, track_segment):
-        self.__log_track_len(track_segment)
-        self.writer.write(self.next_name(source), track_segment)
+    def write(self, source, track):
+        self.__log_track_len(track)
+        self.writer.write_track(self.next_name(source), track)
         #increase counter after writing for the next name
         self.output_count += 1
 
     @debug_enabled
-    def __log_track_len(self, track_segment):
-        self.logger.debug(f"Track length: {self.track_length(track_segment)} km")
+    def __log_track_len(self, track):
+        self.logger.debug(f"Track length: {self.track_length(track)} km")
 
-    def track_length(self, track_segment):
+    def track_length(self, track):
         """
         This calculates length of the track in km.
         """
-        points = self.extract_coordinates(track_segment)
-        return GeoCalc.track_length(points) / Splitter.KILO
+        points = [point for segment in track.segments for point in segment.points]
+        coords = self.extract_coordinates(points)
+        return GeoCalc.track_length(coords) / Splitter.KILO
 
-    def extract_coordinates(self, track_segment):
+    def extract_coordinates(self, points):
         """
         Extract coordinates of all points.
         """
-        return [(p.latitude, p.longitude) for p in track_segment.points]
+        return [(p.latitude, p.longitude) for p in points]
 
     def log_source(self, source):
         self.logger.debug(f"Splitting file {source} into files in {self.writer.dest_dir}")
 
     def split(self, source, limit):
         self.log_source(source)
-
         self.__reset_output_count()
-        track_segment = self.new_segment()
 
-        for track in self.tracks(source):
+        origin = self.tracks(source)
+        new_tracks = self._split(origin, limit)
+        if len(new_tracks) > len(origin):
+            for track in new_tracks:
+                self.write(source, track)
+
+    def _split(self, tracks, limit) -> [GPXTrack]:
+        new_tracks = []
+        points = []
+
+        for track in tracks:
             for segment in track.segments:
                 for point in segment.points:
-                    track_segment.points.append(point)
+                    points.append(point)
 
                     # if a limit for the track segment is exceeded,
                     # we write current segment to a file and create a new one
-                    if self.exceeds_limit(track_segment, limit):
-                        self.write(source, track_segment)
-                        # add current point as first one to new segment
-                        track_segment = self.new_segment(point)
+                    if self.exceeds_limit(points, limit):
+                        new_track = self.clone_track(track, points)
+                        new_tracks.append(new_track)
 
-        self.write_remainings(source, track_segment)
+                        # add current point as first one to new segment
+                        points = [point]
+
+        if len(points) > 1:
+            last = tracks[-1]
+            new_track = self.clone_track(last, points)
+            new_tracks.append(new_track)
+
+        return new_tracks
 
     @abstractmethod
     def exceeds_limit(self, track_segment, max):
@@ -116,8 +129,8 @@ class PointSplitter(Splitter):
         self.logger.debug(f"maximum number of points in track: {limit}")
         super().split(source, limit)
 
-    def exceeds_limit(self, track_segment, limit):
-        return len(track_segment.points) >= limit
+    def exceeds_limit(self, points, limit):
+        return len(points) >= limit
 
 
 class LengthSplitter(Splitter):
@@ -135,10 +148,10 @@ class LengthSplitter(Splitter):
         self.segment_length = 0
         super().split(source, limit)
 
-    def exceeds_limit(self, track_segment, limit):
-        if len(track_segment.points) > 2:
-            points = self.extract_coordinates(track_segment)
-            dist = GeoCalc.points(points[-2], points[-1]) / Splitter.KILO
+    def exceeds_limit(self, points, limit):
+        if len(points) > 2:
+            coords = self.extract_coordinates(points)
+            dist = GeoCalc.points(coords[-2], coords[-1]) / Splitter.KILO
             self.segment_length = self.segment_length + dist
 
             if self.segment_length >= limit:

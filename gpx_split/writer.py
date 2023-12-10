@@ -2,6 +2,7 @@ import os
 
 import gpxpy
 import gpxpy.gpx
+from gpxpy.gpx import GPXTrack, GPXTrackSegment
 
 from gpx_split.log_factory import LogFactory
 
@@ -16,14 +17,19 @@ class Writer:
         self.dest_dir = dest_dir
         self.logger = LogFactory.create(__name__)
 
-    def write(self, name, segment):
-        file = f"{name}.gpx"
+    def write(self, name: str, segment: GPXTrackSegment):
         self.logger.debug(f"writing {len(segment.points)} points to {file}")
+        gpx_track = gpxpy.gpx.GPXTrack()
+        gpx_track.segments.append(segment)
+        self.write_track(name, gpx_track)
+
+    def write_track(self, name: str, track: GPXTrack):
+        file = f"{name}.gpx"
+        points = [point for segment in track.segments for point in segment.points]
+        self.logger.debug(f"writing {len(points)} points to {file}")
         gpx = gpxpy.gpx.GPX()
         gpx.name = name
-        gpx_track = gpxpy.gpx.GPXTrack()
-        gpx.tracks.append(gpx_track)
-        gpx_track.segments.append(segment)
+        gpx.tracks.append(track)
 
         with open(os.path.join(self.dest_dir, file), "w") as f:
             f.write(gpx.to_xml())
